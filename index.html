@@ -109,25 +109,42 @@
   .page-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
 
   /* ---------- 看板 ---------- */
-  .range-bar {
+  .tabs {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    background: #fff; border-radius: 14px; padding: 6px;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04); margin-bottom: 14px;
+    width: fit-content;
+  }
+  .tab {
+    height: 36px; padding: 0 20px; border-radius: 10px;
+    border: none; background: transparent; font-size: 14px; color: var(--muted);
+  }
+  .tab:hover { background: #f3f6fb; color: var(--text); }
+  .tab.active { background: var(--primary); color: #fff; font-weight: 600; }
+
+  .custom-bar {
     display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-    background: #fff; border-radius: 14px; padding: 14px 16px; margin-bottom: 18px;
+    background: #fff; border-radius: 14px; padding: 12px 16px; margin-bottom: 14px;
     box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
   }
-  .range-bar input[type="date"] {
+  .custom-bar input[type="date"] {
     height: 36px; padding: 0 10px; border: 1px solid var(--line);
     border-radius: 9px; font-size: 13px; color: var(--text);
   }
-  .chip {
-    height: 32px; padding: 0 14px; border-radius: 16px;
-    border: 1px solid var(--line); background: #fff; font-size: 13px; color: var(--muted);
-  }
-  .chip:hover { border-color: var(--primary); color: var(--primary); }
-  .chip.active { background: var(--primary); border-color: var(--primary); color: #fff; }
-  .range-bar .spacer { flex: 1; }
   .apply-btn {
     height: 34px; padding: 0 18px; border: none; border-radius: 9px;
     background: var(--primary); color: #fff; font-size: 13px; font-weight: 600;
+  }
+
+  .period-head {
+    display: flex; align-items: baseline; gap: 10px; margin: 4px 2px 10px;
+  }
+  .period-name { font-size: 17px; font-weight: 700; }
+  .period-range { font-size: 13px; color: var(--muted); }
+
+  .group-label {
+    font-size: 13px; font-weight: 600; color: var(--muted);
+    margin: 16px 2px 8px; letter-spacing: .5px;
   }
 
   .stat-grid {
@@ -283,24 +300,38 @@
         </div>
       </div>
 
-      <div class="range-bar">
+      <div class="tabs" id="periodTabs">
+        <button class="tab active" data-tab="today">今日</button>
+        <button class="tab" data-tab="yesterday">昨日</button>
+        <button class="tab" data-tab="last3">近三天</button>
+        <button class="tab" data-tab="month">本月</button>
+        <button class="tab" data-tab="custom">自定义</button>
+      </div>
+
+      <div class="custom-bar" id="customBar" style="display:none">
         <input type="date" id="fromDate" />
         <span style="color:#9ca3af">至</span>
         <input type="date" id="toDate" />
-        <button class="chip" data-days="0">今日</button>
-        <button class="chip" data-days="3">近三天</button>
-        <button class="chip" data-days="7">近七天</button>
-        <button class="chip" data-days="30">近30天</button>
-        <button class="chip" data-month="1">本月</button>
-        <div class="spacer"></div>
         <button class="apply-btn" id="applyRange">查询</button>
       </div>
 
-      <div class="stat-grid" id="statGrid"></div>
+      <div class="period-head">
+        <span class="period-name" id="periodTitle">今日</span>
+        <span class="period-range" id="periodRange"></span>
+      </div>
+
+      <div class="group-label">本阶段数据</div>
+      <div class="stat-grid" id="periodStats"></div>
+
+      <div class="group-label">累计数据</div>
+      <div class="stat-grid" id="totalStats"></div>
 
       <div class="panel">
         <h3 class="panel-title">每日趋势</h3>
-        <div class="chart-box"><canvas id="trendChart"></canvas></div>
+        <div class="chart-box" id="chartBox"><canvas id="trendChart"></canvas></div>
+        <div class="empty-hint" id="chartEmpty" style="display:none">
+          单日没有趋势曲线，切到「近三天 / 本月」或自定义多日区间查看。
+        </div>
       </div>
     </section>
 
@@ -477,38 +508,40 @@
   });
 
   /* ---------- 看板 ---------- */
+  const TAB_LABELS = { today: '今日', yesterday: '昨日', last3: '近三天', month: '本月', custom: '自定义' };
+  let currentTab = 'today';
+
   function initDashboard() {
     $('fromDate').value = shiftDays(-6);
     $('toDate').value = todayStr();
-    bindRangeChips();
+
+    document.querySelectorAll('#periodTabs .tab').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#periodTabs .tab').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentTab = btn.dataset.tab;
+        $('customBar').style.display = currentTab === 'custom' ? 'flex' : 'none';
+        loadStats();
+      });
+    });
+
+    $('applyRange').addEventListener('click', loadStats);
     loadStats();
   }
 
-  function bindRangeChips() {
-    document.querySelectorAll('.chip[data-days]').forEach((b) => {
-      b.addEventListener('click', () => {
-        const days = Number(b.dataset.days);
-        $('fromDate').value = days === 0 ? todayStr() : shiftDays(-(days - 1));
-        $('toDate').value = todayStr();
-        markChip(b);
-        loadStats();
-      });
-    });
-    document.querySelectorAll('.chip[data-month]').forEach((b) => {
-      b.addEventListener('click', () => {
-        const now = new Date();
-        $('fromDate').value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`;
-        $('toDate').value = todayStr();
-        markChip(b);
-        loadStats();
-      });
-    });
-    $('applyRange').addEventListener('click', loadStats);
-  }
-
-  function markChip(el) {
-    document.querySelectorAll('.chip').forEach((c) => c.classList.remove('active'));
-    el.classList.add('active');
+  function tabRange(tab) {
+    const today = todayStr();
+    if (tab === 'today') return { from: today, to: today };
+    if (tab === 'yesterday') {
+      const y = shiftDays(-1);
+      return { from: y, to: y };
+    }
+    if (tab === 'last3') return { from: shiftDays(-2), to: today };
+    if (tab === 'month') {
+      const d = new Date();
+      return { from: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-01`, to: today };
+    }
+    return { from: $('fromDate').value, to: $('toDate').value };
   }
 
   function statCard(label, value, note, unit) {
@@ -520,40 +553,53 @@
   }
 
   async function loadStats() {
-    const from = $('fromDate').value;
-    const to = $('toDate').value;
+    const { from, to } = tabRange(currentTab);
     if (!from || !to) { toast('请选择日期范围'); return; }
     if (from > to) { toast('开始日期不能晚于结束日期'); return; }
 
     try {
       const data = await api('adminStats', { from, to });
-      const t = data.today, l3 = data.last3, m = data.month, r = data.rangeAgg;
-
-      $('statGrid').innerHTML = [
-        statCard('累计注册用户', data.totals.users, '全部账号数', '人'),
-        statCard('累计评估次数', data.totals.assessments, '全部评估记录', '次'),
-        statCard('今日使用人数', t.users, t.date, '人'),
-        statCard('今日使用次数', t.opens, '打开小程序次数', '次'),
-        statCard('今日评估次数', t.assessments, '提交评估次数', '次'),
-        statCard('近三天使用人数', l3.users, `${l3.from} ~ ${l3.to}`, '人'),
-        statCard('近三天使用次数', l3.opens, '含评估', '次'),
-        statCard('本月使用人数', m.users, `${m.from} ~ ${m.to}`, '人'),
-        statCard('本月使用次数', m.opens, '含评估', '次'),
-        statCard('所选区间人数', r.users, `${r.from} ~ ${r.to}`, '人'),
-        statCard('所选区间次数', r.opens, '含评估', '次'),
-        statCard('所选区间评估', r.assessments, '提交评估次数', '次')
-      ].join('');
-
-      renderChart(data.series);
+      const period = (data.periods && (data.periods[currentTab] || data.periods.custom)) || {};
+      renderPeriod(currentTab, period);
+      renderTotals(data.totals || {});
+      renderChart(data.series || []);
     } catch (err) {
       if (err.code !== 'UNAUTHORIZED' && err.code !== 'TOKEN_EXPIRED') toast(err.message || '统计数据加载失败');
     }
   }
 
+  function renderPeriod(tab, p) {
+    $('periodTitle').textContent = TAB_LABELS[tab] || '所选区间';
+    $('periodRange').textContent = p.from
+      ? (p.from === p.to ? p.from : `${p.from} ~ ${p.to}`)
+      : '';
+
+    $('periodStats').innerHTML = [
+      statCard('使用人数', p.users, '打开过小程序的用户', '人'),
+      statCard('使用次数', p.opens, '打开小程序的次数', '次'),
+      statCard('评估次数', p.assessments, '提交评估的次数', '次')
+    ].join('');
+  }
+
+  function renderTotals(totals) {
+    $('totalStats').innerHTML = [
+      statCard('累计注册用户', totals.users, '全部账号数', '人'),
+      statCard('累计评估次数', totals.assessments, '全部评估记录', '次')
+    ].join('');
+  }
+
   function renderChart(series) {
+    const multi = series.length > 1;
+    $('chartBox').style.display = multi ? 'block' : 'none';
+    $('chartEmpty').style.display = multi ? 'none' : 'block';
+    if (!multi) {
+      if (chart) { chart.destroy(); chart = null; }
+      return;
+    }
+
     const labels = series.map((s) => s.date.slice(5));
     const ctx = $('trendChart').getContext('2d');
-    if (chart) chart.destroy();
+    if (chart) { chart.destroy(); chart = null; }
     chart = new Chart(ctx, {
       type: 'line',
       data: {
