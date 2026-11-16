@@ -167,6 +167,98 @@
   .panel-title { font-size: 15px; font-weight: 600; margin: 0 0 14px; }
   .chart-box { position: relative; height: 320px; }
 
+  /* ---------- 评估记录 ---------- */
+  .head-actions { display: flex; gap: 8px; }
+  .btn-ghost-sm {
+    height: 32px; padding: 0 14px; border-radius: 8px;
+    border: 1px solid var(--line); background: #fff;
+    font-size: 13px; color: var(--muted);
+  }
+  .btn-ghost-sm:hover { border-color: var(--primary); color: var(--primary); }
+
+  .filters {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    background: #fff; border-radius: 14px; padding: 12px 16px; margin-bottom: 14px;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+  }
+  .filters input, .filters select {
+    height: 34px; padding: 0 10px; border: 1px solid var(--line);
+    border-radius: 8px; font-size: 13px; color: var(--text); background: #fff;
+    outline: none;
+  }
+  .filters input:focus, .filters select:focus { border-color: var(--primary); }
+  #recordSearch { width: 180px; }
+  .muted { font-size: 13px; color: var(--muted); margin-left: auto; }
+
+  .table-panel { padding: 0; overflow: hidden; }
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .data-table thead th {
+    text-align: left; padding: 12px 14px; background: #f8fafc;
+    color: var(--muted); font-weight: 600; white-space: nowrap;
+    border-bottom: 1px solid var(--line);
+  }
+  .data-table tbody td {
+    padding: 12px 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle;
+  }
+  .data-table tbody tr:hover { background: #f8fafc; }
+  .data-table tbody tr:last-child td { border-bottom: none; }
+  .risk-tag {
+    display: inline-block; padding: 2px 10px; border-radius: 10px;
+    font-size: 12px; font-weight: 600;
+  }
+  .risk-tag.high { background: #fee2e2; color: #b91c1c; }
+  .risk-tag.medium { background: #ffedd5; color: #c2410c; }
+  .risk-tag.low { background: #dcfce7; color: #15803d; }
+  .risk-tag.default { background: #e5e7eb; color: #4b5563; }
+  .link-btn {
+    border: none; background: transparent; color: var(--primary);
+    font-size: 13px; padding: 0; margin-right: 10px;
+  }
+  .link-btn.danger { color: var(--danger); }
+
+  .modal-mask {
+    display: none; position: fixed; inset: 0; background: rgba(17,24,39,.45);
+    z-index: 50; align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-mask.show { display: flex; }
+  .modal-box {
+    background: #fff; border-radius: 16px; width: 100%; max-width: 620px;
+    max-height: 86vh; display: flex; flex-direction: column;
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25);
+  }
+  .modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; border-bottom: 1px solid var(--line);
+    font-size: 16px; font-weight: 700;
+  }
+  .modal-close {
+    border: none; background: transparent; font-size: 24px; line-height: 1;
+    color: var(--muted); padding: 0 4px;
+  }
+  .modal-body { padding: 18px 20px; overflow-y: auto; }
+  .modal-foot {
+    display: flex; justify-content: space-between; gap: 10px;
+    padding: 14px 20px; border-top: 1px solid var(--line);
+  }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 18px; }
+  .detail-item { font-size: 13px; }
+  .detail-item .k { color: var(--muted); margin-right: 6px; }
+  .detail-item .v { color: var(--text); font-weight: 500; }
+  .detail-section { margin-top: 16px; }
+  .detail-section h4 {
+    font-size: 13px; color: var(--muted); font-weight: 600;
+    margin: 0 0 8px; letter-spacing: .5px;
+  }
+  .factor-chip {
+    display: inline-block; padding: 3px 10px; margin: 0 6px 6px 0;
+    border-radius: 10px; background: #eff6ff; color: var(--primary); font-size: 12px;
+  }
+  @media (max-width: 720px) {
+    .detail-grid { grid-template-columns: 1fr; }
+    .data-table { font-size: 12px; }
+    .data-table thead th, .data-table tbody td { padding: 10px 8px; }
+  }
+
   /* ---------- 客服 ---------- */
   .support-layout {
     display: grid; grid-template-columns: 300px 1fr; gap: 16px;
@@ -283,6 +375,7 @@
       <div class="brand-text">管理后台</div>
     </div>
     <button class="nav-item active" data-view="dashboard">📊 数据看板</button>
+    <button class="nav-item" data-view="records">📋 评估记录</button>
     <button class="nav-item" data-view="support">💬 客服消息 <span class="nav-dot" id="navUnread" style="display:none">0</span></button>
     <div class="sidebar-foot">
       <div class="user-line" id="userLine">管理员</div>
@@ -335,6 +428,59 @@
       </div>
     </section>
 
+    <!-- 评估记录 -->
+    <section id="viewRecords" style="display:none">
+      <div class="page-head">
+        <div>
+          <h2 class="page-title">评估记录</h2>
+          <div class="page-sub">小程序与网站提交的评估都会同步到这里</div>
+        </div>
+        <div class="head-actions">
+          <button class="btn-ghost-sm" id="exportRecords">导出 CSV</button>
+          <button class="btn-ghost-sm" id="refreshRecords">刷新</button>
+        </div>
+      </div>
+
+      <div class="filters">
+        <input id="recordSearch" placeholder="按姓名搜索" />
+        <select id="recordRisk">
+          <option value="">全部风险</option>
+          <option value="高风险">高风险</option>
+          <option value="中风险">中风险</option>
+          <option value="低风险">低风险</option>
+          <option value="极低风险">极低风险</option>
+        </select>
+        <select id="recordSource">
+          <option value="">全部来源</option>
+          <option value="miniprogram">小程序</option>
+          <option value="web">网站</option>
+        </select>
+        <input type="date" id="recordFrom" />
+        <span style="color:#9ca3af">至</span>
+        <input type="date" id="recordTo" />
+        <span class="muted" id="recordCount"></span>
+      </div>
+
+      <div class="panel table-panel">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>姓名</th>
+              <th>年龄/性别</th>
+              <th>风险等级</th>
+              <th>患病概率</th>
+              <th>评估时间</th>
+              <th>来源</th>
+              <th>评估人员</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="recordRows"></tbody>
+        </table>
+        <div class="empty-hint" id="recordEmpty" style="display:none">暂无评估记录</div>
+      </div>
+    </section>
+
     <!-- 客服 -->
     <section id="viewSupport" style="display:none">
       <div class="page-head">
@@ -369,6 +515,21 @@
       </div>
     </section>
   </main>
+</div>
+
+<!-- 评估详情 -->
+<div class="modal-mask" id="recordModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span id="recordModalTitle">评估详情</span>
+      <button class="modal-close" id="recordModalClose">×</button>
+    </div>
+    <div class="modal-body" id="recordModalBody"></div>
+    <div class="modal-foot">
+      <button class="btn-danger-ghost" id="recordDeleteBtn">删除这条记录</button>
+      <button class="btn-ghost-sm" id="recordModalOk">关闭</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -450,6 +611,7 @@
     $('userLine').textContent = (currentUser && (currentUser.displayName || currentUser.username)) || '管理员';
     scheduleSessionEnd();
     initDashboard();
+    initRecords();
     loadThreads();
     startThreadPolling();
   }
@@ -525,8 +687,10 @@
       btn.classList.add('active');
       const view = btn.dataset.view;
       $('viewDashboard').style.display = view === 'dashboard' ? 'block' : 'none';
+      $('viewRecords').style.display = view === 'records' ? 'block' : 'none';
       $('viewSupport').style.display = view === 'support' ? 'block' : 'none';
       if (view === 'dashboard') loadStats();
+      if (view === 'records') loadRecords();
       if (view === 'support') loadThreads();
     });
   });
@@ -663,6 +827,257 @@
           x: { grid: { display: false } }
         }
       }
+    });
+  }
+
+  /* ---------- 评估记录 ---------- */
+  let allRecords = [];
+  let filteredRecords = [];
+  let currentRecordId = null;
+
+  const SOURCE_LABEL = { miniprogram: '小程序', web: '网站' };
+  const YES_NO = (v) => (v === true || v === 1 || v === '1' || v === '是') ? '是' : '否';
+
+  function localDay(value) {
+    if (!value) return '';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return String(value).slice(0, 10);
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
+
+  function riskClass(level) {
+    if (level === '高风险') return 'high';
+    if (level === '中风险') return 'medium';
+    if (level === '低风险') return 'low';
+    return 'default';
+  }
+
+  function numText(value, unit) {
+    if (value === null || value === undefined || value === '') return '--';
+    return `${value}${unit || ''}`;
+  }
+
+  async function loadRecords() {
+    $('recordRows').innerHTML = '<tr><td colspan="8" style="text-align:center;color:#9ca3af;padding:30px">加载中...</td></tr>';
+    $('recordEmpty').style.display = 'none';
+    try {
+      const data = await api('listAssessments', { limit: 500 });
+      allRecords = (data.items || []).map((item) => ({
+        ...item,
+        dateText: fmtTime(item.date || item.createdAt),
+        dayKey: localDay(item.date || item.createdAt)
+      }));
+      applyRecordFilters();
+    } catch (err) {
+      if (err.code !== 'UNAUTHORIZED' && err.code !== 'TOKEN_EXPIRED' && err.code !== 'SESSION_REPLACED') {
+        toast(err.message || '加载失败');
+      }
+    }
+  }
+
+  function applyRecordFilters() {
+    const kw = ($('recordSearch').value || '').trim();
+    const risk = $('recordRisk').value;
+    const source = $('recordSource').value;
+    const from = $('recordFrom').value;
+    const to = $('recordTo').value;
+
+    filteredRecords = allRecords.filter((r) => {
+      if (kw && !String(r.patientName || '').includes(kw)) return false;
+      if (risk && r.riskLevel !== risk) return false;
+      if (source && r.source !== source) return false;
+      if (from && r.dayKey && r.dayKey < from) return false;
+      if (to && r.dayKey && r.dayKey > to) return false;
+      return true;
+    });
+    renderRecords();
+  }
+
+  function renderRecords() {
+    $('recordCount').textContent = `共 ${filteredRecords.length} 条`;
+    if (!filteredRecords.length) {
+      $('recordRows').innerHTML = '';
+      $('recordEmpty').style.display = 'block';
+      return;
+    }
+    $('recordEmpty').style.display = 'none';
+    $('recordRows').innerHTML = filteredRecords.map((r) => `
+      <tr>
+        <td>${escapeHtml(r.patientName || '未命名')}</td>
+        <td>${escapeHtml(String(r.age || '--'))} / ${escapeHtml(r.gender || '--')}</td>
+        <td><span class="risk-tag ${riskClass(r.riskLevel)}">${escapeHtml(r.riskLevel || '未分级')}</span></td>
+        <td>${r.probability == null ? '--' : escapeHtml(String(r.probability)) + '%'}</td>
+        <td>${escapeHtml(r.dateText || '')}</td>
+        <td>${SOURCE_LABEL[r.source] || '—'}</td>
+        <td>${escapeHtml(r.assessedBy || r.ownerName || '—')}</td>
+        <td>
+          <button class="link-btn" data-detail="${escapeHtml(String(r.id))}">查看</button>
+          <button class="link-btn danger" data-delete="${escapeHtml(String(r.id))}">删除</button>
+        </td>
+      </tr>`).join('');
+
+    $('recordRows').querySelectorAll('[data-detail]').forEach((btn) => {
+      btn.addEventListener('click', () => openRecordDetail(btn.dataset.detail));
+    });
+    $('recordRows').querySelectorAll('[data-delete]').forEach((btn) => {
+      btn.addEventListener('click', () => deleteRecord(btn.dataset.delete));
+    });
+  }
+
+  function detailItem(k, v) {
+    return `<div class="detail-item"><span class="k">${escapeHtml(k)}</span><span class="v">${escapeHtml(String(v))}</span></div>`;
+  }
+
+  function openRecordDetail(id) {
+    const r = allRecords.find((item) => String(item.id) === String(id));
+    if (!r) return;
+    currentRecordId = r.id;
+
+    $('recordModalTitle').textContent = `${r.patientName || '未命名'} · ${r.riskLevel || '未分级'}`;
+
+    const factors = Array.isArray(r.riskFactors) ? r.riskFactors : [];
+    const history = [
+      ['高血压', YES_NO(r.hypertension)],
+      ['糖尿病', YES_NO(r.diabetes)],
+      ['心脏病', r.heartDiseaseType === '1' ? '房颤或心梗' : (r.heartDiseaseType === '2' ? '其他心脏病' : '无')],
+      ['血脂异常', YES_NO(r.hyperlipidemia)],
+      ['以前发生过中风', YES_NO(r.strokeHistory)],
+      ['以前发生过短暂性脑缺血', YES_NO(r.tiaHistory)],
+      ['脑卒中家族史', { '1': '一级亲属', '2': '二级亲属', '0': '无' }[r.strokeFamilyHistory] || '—'],
+      ['超重或肥胖', YES_NO(r.overweight)],
+      ['吸烟', YES_NO(r.smoking)],
+      ['运动缺乏', YES_NO(r.lackExercise)],
+      ['饮酒', YES_NO(r.drinking)],
+      ['其他家族遗传性疾病', YES_NO(r.otherFamilyHistory)]
+    ];
+
+    $('recordModalBody').innerHTML = `
+      <div class="detail-section" style="margin-top:0">
+        <h4>基本信息</h4>
+        <div class="detail-grid">
+          ${detailItem('年龄', numText(r.age, ' 岁'))}
+          ${detailItem('性别', r.gender || '--')}
+          ${detailItem('婚姻状况', r.everMarried || '--')}
+          ${detailItem('职业类型', r.workType || '--')}
+          ${detailItem('居住地', r.residenceType || '--')}
+          ${detailItem('文化程度', r.education || '--')}
+          ${detailItem('家庭月收入', r.monthlyIncome || '--')}
+          ${detailItem('医疗费用承担方式', r.medicalInsurance || '--')}
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h4>临床指标</h4>
+        <div class="detail-grid">
+          ${detailItem('收缩压', numText(r.systolicBP, ' mmHg'))}
+          ${detailItem('舒张压', numText(r.diastolicBP, ' mmHg'))}
+          ${detailItem('空腹血糖', numText(r.avgGlucoseLevel, ' mmol/L'))}
+          ${detailItem('身高', numText(r.height, ' cm'))}
+          ${detailItem('体重', numText(r.weight, ' kg'))}
+          ${detailItem('BMI', numText(r.bmi))}
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h4>高危因素（8+2）</h4>
+        <div class="detail-grid">
+          ${history.map(([k, v]) => detailItem(k, v)).join('')}
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h4>主要风险因素</h4>
+        ${factors.length
+          ? factors.map((f) => `<span class="factor-chip">${escapeHtml(f)}</span>`).join('')
+          : '<span style="color:#9ca3af;font-size:13px">未发现明显风险因素</span>'}
+      </div>
+
+      <div class="detail-section">
+        <h4>评估信息</h4>
+        <div class="detail-grid">
+          ${detailItem('风险等级', r.riskLevel || '--')}
+          ${detailItem('患病概率', numText(r.probability, '%'))}
+          ${detailItem('评估时间', r.dateText || '--')}
+          ${detailItem('来源', SOURCE_LABEL[r.source] || '--')}
+          ${detailItem('评估人员', r.assessedBy || r.ownerName || '--')}
+          ${detailItem('备注', r.notes || '--')}
+        </div>
+      </div>`;
+
+    $('recordModal').classList.add('show');
+  }
+
+  function closeRecordModal() {
+    $('recordModal').classList.remove('show');
+    currentRecordId = null;
+  }
+
+  async function deleteRecord(id) {
+    const r = allRecords.find((item) => String(item.id) === String(id));
+    if (!r) return;
+    if (!confirm(`确定删除「${r.patientName || '未命名'}」的这条评估记录吗？删除后不可恢复。`)) return;
+    try {
+      await api('deleteAssessment', { id });
+      allRecords = allRecords.filter((item) => String(item.id) !== String(id));
+      applyRecordFilters();
+      if (String(currentRecordId) === String(id)) closeRecordModal();
+      toast('已删除');
+    } catch (err) {
+      if (err.code !== 'UNAUTHORIZED' && err.code !== 'TOKEN_EXPIRED' && err.code !== 'SESSION_REPLACED') {
+        toast(err.message || '删除失败');
+      }
+    }
+  }
+
+  function csvCell(value) {
+    const s = String(value == null ? '' : value);
+    return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+
+  function exportRecords() {
+    if (!filteredRecords.length) { toast('没有可导出的记录'); return; }
+    const headers = ['姓名', '年龄', '性别', '风险等级', '患病概率(%)', '评估时间', '来源', '评估人员',
+      '婚姻状况', '职业类型', '居住地', '文化程度', '家庭月收入', '医疗费用承担方式',
+      '收缩压', '舒张压', '空腹血糖', '身高', '体重', 'BMI', '风险因素', '备注'];
+    const lines = [headers];
+    filteredRecords.forEach((r) => {
+      lines.push([
+        r.patientName || '', r.age || '', r.gender || '', r.riskLevel || '', r.probability == null ? '' : r.probability,
+        r.dateText || '', SOURCE_LABEL[r.source] || '', r.assessedBy || r.ownerName || '',
+        r.everMarried || '', r.workType || '', r.residenceType || '', r.education || '',
+        r.monthlyIncome || '', r.medicalInsurance || '',
+        r.systolicBP || '', r.diastolicBP || '', r.avgGlucoseLevel || '',
+        r.height || '', r.weight || '', r.bmi || '',
+        Array.isArray(r.riskFactors) ? r.riskFactors.join('、') : '', r.notes || ''
+      ]);
+    });
+    const csv = '﻿' + lines.map((line) => line.map(csvCell).join(',')).join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `评估记录_${todayStr()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast(`已导出 ${filteredRecords.length} 条`);
+  }
+
+  function initRecords() {
+    ['recordSearch', 'recordRisk', 'recordSource', 'recordFrom', 'recordTo'].forEach((id) => {
+      $(id).addEventListener('input', applyRecordFilters);
+      $(id).addEventListener('change', applyRecordFilters);
+    });
+    $('refreshRecords').addEventListener('click', loadRecords);
+    $('exportRecords').addEventListener('click', exportRecords);
+    $('recordModalClose').addEventListener('click', closeRecordModal);
+    $('recordModalOk').addEventListener('click', closeRecordModal);
+    $('recordDeleteBtn').addEventListener('click', () => {
+      if (currentRecordId) deleteRecord(currentRecordId);
+    });
+    $('recordModal').addEventListener('click', (e) => {
+      if (e.target === $('recordModal')) closeRecordModal();
     });
   }
 
