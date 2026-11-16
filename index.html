@@ -365,6 +365,11 @@
     font-size: 12px; font-weight: 500;
   }
 
+  .advice-box {
+    font-size: 13px; line-height: 1.8; color: #4b5563;
+    background: #f8fafc; border-radius: 10px; padding: 12px 14px;
+  }
+
   /* 更新公告 */
   .version-item { border-bottom: 1px solid #f1f5f9; }
   .version-item:last-child { border-bottom: none; }
@@ -1087,6 +1092,16 @@
     return 'default';
   }
 
+  function adviceForLevel(level) {
+    if (level === '高风险') {
+      return '建议尽快到神经内科或卒中中心就诊，进行专业评估；同时控制血压、血糖、血脂，遵医嘱用药。如出现口角歪斜、肢体无力、言语不清，请立即拨打 120。';
+    }
+    if (level === '中风险') {
+      return '建议 3-6 个月复测一次，重点控制血压、血糖、体重，戒烟限酒，保持规律运动；如有不适及时就医。';
+    }
+    return '继续保持健康生活方式，定期体检，关注血压、血糖、血脂变化。';
+  }
+
   function readFilters() {
     recordFilters.keyword = ($('recordSearch').value || '').trim();
     recordFilters.riskLevel = $('recordRisk').value;
@@ -1293,6 +1308,11 @@
         ${factors.length
           ? factors.map((f) => `<span class="factor-chip">${escapeHtml(f)}</span>`).join('')
           : '<span style="color:#9ca3af;font-size:13px">未发现明显风险因素</span>'}
+      </div>
+
+      <div class="sec">
+        <div class="sec-title">健康建议</div>
+        <div class="advice-box">${escapeHtml(adviceForLevel(r.riskLevel))}</div>
       </div>
 
       <div class="sec" style="margin-bottom:0">
