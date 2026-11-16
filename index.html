@@ -106,6 +106,13 @@
   .main { flex: 1; min-width: 0; padding: 24px 28px 40px; }
   .page-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
   .page-title { font-size: 22px; font-weight: 700; margin: 0; }
+  .clock {
+    font-size: 14px; color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    background: #fff; padding: 9px 16px; border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+    white-space: nowrap;
+  }
   .page-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
 
   /* ---------- 看板 ---------- */
@@ -462,6 +469,7 @@
           <h2 class="page-title">数据看板</h2>
           <div class="page-sub">小程序使用情况统计（北京时间）</div>
         </div>
+        <div class="clock" id="currentClock">--</div>
       </div>
 
       <div class="tabs" id="periodTabs">
@@ -627,6 +635,7 @@
   let chatTimer = null;
   let listTimer = null;
   let sessionTimer = null;
+  let clockTimer = null;
 
   function toast(msg) {
     const el = $('toast');
@@ -685,10 +694,24 @@
     $('app').classList.add('ready');
     $('userLine').textContent = (currentUser && (currentUser.displayName || currentUser.username)) || '管理员';
     scheduleSessionEnd();
+    startClock();
     initDashboard();
     initRecords();
     loadThreads();
     startThreadPolling();
+  }
+
+  function startClock() {
+    const tick = () => {
+      const d = new Date();
+      const el = $('currentClock');
+      if (!el) return;
+      el.textContent = `${d.getFullYear()}年${pad(d.getMonth() + 1)}月${pad(d.getDate())}日 `
+        + `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    };
+    clearInterval(clockTimer);
+    tick();
+    clockTimer = setInterval(tick, 1000);
   }
 
   // 6 小时后强制重新登录（服务端令牌同样 6 小时）
@@ -713,6 +736,8 @@
     localStorage.removeItem(LOGIN_AT_KEY);
     clearTimeout(sessionTimer);
     sessionTimer = null;
+    clearInterval(clockTimer);
+    clockTimer = null;
     stopChatTimer();
     stopListTimer();
     $('app').classList.remove('ready');
