@@ -208,6 +208,14 @@
   }
   .data-table tbody tr:hover { background: #f8fafc; }
   .data-table tbody tr:last-child td { border-bottom: none; }
+  .data-table th.check, .data-table td.check { width: 42px; text-align: center; padding-left: 10px; padding-right: 0; }
+  .data-table input[type="checkbox"] {
+    width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; vertical-align: middle;
+  }
+  .data-table tbody tr.selected { background: #eff6ff; }
+  .btn-danger-outline:disabled {
+    opacity: .45; cursor: not-allowed; background: #fff;
+  }
   .risk-tag {
     display: inline-block; padding: 2px 10px; border-radius: 10px;
     font-size: 12px; font-weight: 600;
@@ -495,7 +503,7 @@
           <div class="page-sub">小程序与网站提交的评估都会同步到这里</div>
         </div>
         <div class="head-actions">
-          <button class="btn-danger-outline" id="deleteFiltered">删除筛选结果</button>
+          <button class="btn-danger-outline" id="deleteSelected" disabled>删除选中 (0)</button>
           <button class="btn-ghost-sm" id="exportRecords">导出 CSV</button>
           <button class="btn-ghost-sm" id="refreshRecords">刷新</button>
         </div>
@@ -525,6 +533,7 @@
         <table class="data-table">
           <thead>
             <tr>
+              <th class="check"><input type="checkbox" id="selectAll" /></th>
               <th>姓名</th>
               <th>年龄/性别</th>
               <th>风险等级</th>
@@ -894,6 +903,7 @@
   let allRecords = [];
   let filteredRecords = [];
   let currentRecordId = null;
+  const selectedIds = new Set();
 
   const SOURCE_LABEL = { miniprogram: '小程序', web: '网站' };
   const YES_NO = (v) => (v === true || v === 1 || v === '1' || v === '是') ? '是' : '否';
@@ -913,7 +923,7 @@
   }
 
   async function loadRecords() {
-    $('recordRows').innerHTML = '<tr><td colspan="8" style="text-align:center;color:#9ca3af;padding:30px">加载中...</td></tr>';
+    $('recordRows').innerHTML = '<tr><td colspan="9" style="text-align:center;color:#9ca3af;padding:30px">加载中...</td></tr>';
     $('recordEmpty').style.display = 'none';
     try {
       const data = await api('listAssessments', { limit: 500 });
@@ -931,6 +941,7 @@
   }
 
   function applyRecordFilters() {
+    selectedIds.clear();
     const kw = ($('recordSearch').value || '').trim();
     const risk = $('recordRisk').value;
     const source = $('recordSource').value;
@@ -953,11 +964,13 @@
     if (!filteredRecords.length) {
       $('recordRows').innerHTML = '';
       $('recordEmpty').style.display = 'block';
+      updateSelectionState();
       return;
     }
     $('recordEmpty').style.display = 'none';
     $('recordRows').innerHTML = filteredRecords.map((r) => `
-      <tr>
+      <tr class="${selectedIds.has(String(r.id)) ? 'selected' : ''}">
+        <td class="check"><input type="checkbox" data-check="${escapeHtml(String(r.id))}" ${selectedIds.has(String(r.id)) ? 'checked' : ''} /></td>
         <td>${escapeHtml(r.patientName || '未命名')}</td>
         <td>${escapeHtml(String(r.age || '--'))} / ${escapeHtml(r.gender || '--')}</td>
         <td><span class="risk-tag ${riskClass(r.riskLevel)}">${escapeHtml(r.riskLevel || '未分级')}</span></td>
@@ -977,6 +990,29 @@
     $('recordRows').querySelectorAll('[data-delete]').forEach((btn) => {
       btn.addEventListener('click', () => deleteRecord(btn.dataset.delete));
     });
+    $('recordRows').querySelectorAll('[data-check]').forEach((box) => {
+      box.addEventListener('change', () => {
+        const id = String(box.dataset.check);
+        if (box.checked) selectedIds.add(id);
+        else selectedIds.delete(id);
+        const row = box.closest('tr');
+        if (row) row.classList.toggle('selected', box.checked);
+        updateSelectionState();
+      });
+    });
+    updateSelectionState();
+  }
+
+  function updateSelectionState() {
+    const total = filteredRecords.length;
+    const picked = filteredRecords.filter((r) => selectedIds.has(String(r.id))).length;
+    const allBox = $('selectAll');
+    allBox.checked = total > 0 && picked === total;
+    allBox.indeterminate = picked > 0 && picked < total;
+
+    const btn = $('deleteSelected');
+    btn.textContent = `删除选中 (${selectedIds.size})`;
+    btn.disabled = selectedIds.size === 0;
   }
 
   function kvRow(key, value) {
@@ -1148,26 +1184,22 @@
     toast(`已导出 ${filteredRecords.length} 条`);
   }
 
-  async function deleteFiltered() {
-    if (!filteredRecords.length) {
-      toast('当前筛选下没有记录');
-      return;
-    }
-    const n = filteredRecords.length;
-    if (!confirm(`将删除当前筛选出的 ${n} 条评估记录，确定吗？`)) return;
-    if (!confirm(`此操作不可恢复，建议先导出备份。\n\n再次确认：删除这 ${n} 条记录？`)) return;
-
-    const ids = filteredRecords.map((r) => r.id).filter((id) => id != null);
+  async function deleteSelected() {
+    const ids = Array.from(selectedIds);
     if (!ids.length) {
-      toast('记录缺少 ID，无法删除');
+      toast('请先勾选要删除的记录');
       return;
     }
+    const n = ids.length;
+    if (!confirm(`将删除选中的 ${n} 条评估记录，确定吗？`)) return;
+    if (!confirm(`此操作不可恢复，建议先导出备份。\n\n再次确认：删除这 ${n} 条记录？`)) return;
 
     try {
       const res = await api('deleteAssessments', { ids });
       const removed = res && res.removed != null ? res.removed : ids.length;
       const idSet = new Set(ids.map(String));
       allRecords = allRecords.filter((r) => !idSet.has(String(r.id)));
+      selectedIds.clear();
       applyRecordFilters();
       closeRecordModal();
       toast(`已删除 ${removed} 条`);
@@ -1185,7 +1217,14 @@
     });
     $('refreshRecords').addEventListener('click', loadRecords);
     $('exportRecords').addEventListener('click', exportRecords);
-    $('deleteFiltered').addEventListener('click', deleteFiltered);
+    $('deleteSelected').addEventListener('click', deleteSelected);
+    $('selectAll').addEventListener('change', (e) => {
+      selectedIds.clear();
+      if (e.target.checked) {
+        filteredRecords.forEach((r) => selectedIds.add(String(r.id)));
+      }
+      renderRecords();
+    });
     $('recordModalClose').addEventListener('click', closeRecordModal);
     $('recordModalOk').addEventListener('click', closeRecordModal);
     $('recordDeleteBtn').addEventListener('click', () => {
