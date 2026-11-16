@@ -326,6 +326,28 @@
     border-radius: 12px; background: #eff6ff; color: var(--primary);
     font-size: 12px; font-weight: 500;
   }
+
+  /* 更新公告 */
+  .version-item { border-bottom: 1px solid #f1f5f9; }
+  .version-item:last-child { border-bottom: none; }
+  .version-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 4px; cursor: pointer; user-select: none;
+  }
+  .version-head:hover { background: #f8fafc; }
+  .version-badge {
+    font-size: 13px; font-weight: 700; padding: 2px 10px; border-radius: 8px;
+    color: #fff; background: var(--primary);
+  }
+  .version-badge.minor { background: #0E9F6E; }
+  .version-badge.patch { background: #EA8C1E; }
+  .version-type { font-size: 12px; color: #6b7280; }
+  .version-date { font-size: 12px; color: #9ca3af; margin-left: auto; }
+  .version-toggle { font-size: 11px; color: #cbd5e1; transition: transform .2s; }
+  .version-item.open .version-toggle { transform: rotate(90deg); }
+  .version-lines { display: none; padding: 0 4px 14px; }
+  .version-item.open .version-lines { display: block; }
+  .version-line { font-size: 13px; color: #4b5563; line-height: 1.9; }
   .detail-section { margin-top: 16px; }
   .detail-section h4 {
     font-size: 13px; color: var(--muted); font-weight: 600;
@@ -457,6 +479,7 @@
     <button class="nav-item" data-view="support">💬 客服消息 <span class="nav-dot" id="navUnread" style="display:none">0</span></button>
     <div class="sidebar-foot">
       <div class="user-line" id="userLine">管理员</div>
+      <button class="logout-btn" id="changelogBtn" style="margin-bottom:8px;">📢 更新公告</button>
       <button class="logout-btn" id="logoutBtn">退出登录</button>
     </div>
   </aside>
@@ -598,6 +621,17 @@
       </div>
     </section>
   </main>
+</div>
+
+<!-- 更新公告 -->
+<div class="modal-mask" id="changelogModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span>📢 版本更新公告</span>
+      <button class="modal-close" id="changelogClose">×</button>
+    </div>
+    <div class="modal-body" id="changelogBody"></div>
+  </div>
 </div>
 
 <!-- 评估详情 -->
@@ -1290,6 +1324,106 @@
     });
   }
 
+  /* ---------- 更新公告 ---------- */
+  const CHANGELOG = [
+    {
+      version: 'v5.1', type: 'minor', typeLabel: '特征更新', date: '2026-11-16',
+      items: [
+        '新增「评估记录」模块，统一查看小程序提交的全部评估',
+        '支持按姓名、风险等级、来源、日期范围筛选',
+        '支持勾选后批量删除，删除前二次确认',
+        '支持查看完整评估详情，并可导出 CSV'
+      ]
+    },
+    {
+      version: 'v5.0', type: 'major', typeLabel: '版本升级', date: '2026-11-09',
+      items: [
+        '全新网站系统上线，管理功能统一到一个后台',
+        '新增「客服消息」，可直接在网站回复用户咨询',
+        '新增「数据看板」，统计使用人数、使用次数与评估情况',
+        '系统仅向管理员开放，不再对外公开'
+      ]
+    },
+    {
+      version: 'v4.2', type: 'patch', typeLabel: '修订补丁', date: '2026-11-09',
+      items: [
+        '完成网站与小程序的数据同步，两端评估结果保持一致',
+        '优化登录设置：会话有效期 6 小时，同一账号仅允许一处登录',
+        '评估结果仅保留患病概率，移除风险分数'
+      ]
+    },
+    {
+      version: 'v4.1', type: 'minor', typeLabel: '特征更新', date: '2025-04-05',
+      items: [
+        '支持以公网地址访问，无需安装即可使用',
+        '优化大模型接入，兼容手机端与电脑端'
+      ]
+    },
+    {
+      version: 'v4.0', type: 'major', typeLabel: '版本升级', date: '2025-03-27',
+      items: [
+        '首次接入 DeepSeek 大模型，提供智能问答与语音交互',
+        '支持语音提问并自动朗读，便于老年用户使用',
+        '结合用户健康数据，提供个性化健康建议',
+        '新增版本更新公告'
+      ]
+    },
+    {
+      version: 'v3.1', type: 'minor', typeLabel: '特征更新', date: '2025-03-25',
+      items: [
+        '新增评估报告语音播报，一键朗读风险详情',
+        '优化运动建议，按年龄推荐适宜的运动方式',
+        '高龄用户（≥70 岁）自动调整为温和活动建议'
+      ]
+    },
+    {
+      version: 'v3.0', type: 'major', typeLabel: '版本升级', date: '2025-01-27',
+      items: [
+        '新增「8+2」高危风险因素模型，更贴合卒中筛查要点',
+        '增大全局字体，优化界面可读性，方便老年用户',
+        '优化风险评估算法，提升预测准确度'
+      ]
+    },
+    {
+      version: 'v2.1', type: 'minor', typeLabel: '特征更新', date: '2025-01-11',
+      items: [
+        '修正血糖单位显示，与临床标准（mmol/L）保持一致',
+        '提高高血压、心脏病患者的风险评估阈值，更符合医学实际',
+        '新增「高血压合并高龄」风险加分，评估更精细'
+      ]
+    }
+  ];
+
+  function renderChangelog() {
+    $('changelogBody').innerHTML = CHANGELOG.map((v, i) => `
+      <div class="version-item ${i === 0 ? 'open' : ''}">
+        <div class="version-head">
+          <span class="version-badge ${v.type}">${v.version}</span>
+          <span class="version-type">${v.typeLabel}</span>
+          <span class="version-date">${v.date}</span>
+          <span class="version-toggle">▶</span>
+        </div>
+        <div class="version-lines">
+          ${v.items.map((text) => `<div class="version-line">· ${escapeHtml(text)}</div>`).join('')}
+        </div>
+      </div>`).join('');
+
+    $('changelogBody').querySelectorAll('.version-head').forEach((head) => {
+      head.addEventListener('click', () => head.parentElement.classList.toggle('open'));
+    });
+  }
+
+  function initChangelog() {
+    $('changelogBtn').addEventListener('click', () => {
+      renderChangelog();
+      $('changelogModal').classList.add('show');
+    });
+    $('changelogClose').addEventListener('click', () => $('changelogModal').classList.remove('show'));
+    $('changelogModal').addEventListener('click', (e) => {
+      if (e.target === $('changelogModal')) $('changelogModal').classList.remove('show');
+    });
+  }
+
   /* ---------- 客服 ---------- */
   function startThreadPolling() {
     stopListTimer();
@@ -1428,6 +1562,8 @@
   }
 
   /* ---------- 启动 ---------- */
+  initChangelog();
+
   if (token && currentUser && currentUser.role === 'admin') {
     showApp();
   } else {
