@@ -208,7 +208,11 @@
   }
   .data-table tbody tr:hover { background: #f8fafc; }
   .data-table tbody tr:last-child td { border-bottom: none; }
-  .data-table th.check, .data-table td.check { width: 42px; text-align: center; padding-left: 10px; padding-right: 0; }
+  .data-table th.check, .data-table td.check {
+    width: 42px; text-align: center; padding-left: 10px; padding-right: 0;
+    display: none;
+  }
+  .data-table.selecting th.check, .data-table.selecting td.check { display: table-cell; }
   .data-table input[type="checkbox"] {
     width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; vertical-align: middle;
   }
@@ -503,7 +507,7 @@
           <div class="page-sub">小程序与网站提交的评估都会同步到这里</div>
         </div>
         <div class="head-actions">
-          <button class="btn-danger-outline" id="deleteSelected" disabled>删除选中 (0)</button>
+          <button class="btn-danger-outline" id="deleteSelected" style="display:none" disabled>删除选中 (0)</button>
           <button class="btn-ghost-sm" id="exportRecords">导出 CSV</button>
           <button class="btn-ghost-sm" id="refreshRecords">刷新</button>
         </div>
@@ -526,6 +530,8 @@
         <input type="date" id="recordFrom" />
         <span style="color:#9ca3af">至</span>
         <input type="date" id="recordTo" />
+        <button class="apply-btn" id="applyRecordFilter">筛选</button>
+        <button class="btn-ghost-sm" id="resetRecordFilter">重置</button>
         <span class="muted" id="recordCount"></span>
       </div>
 
@@ -903,6 +909,7 @@
   let allRecords = [];
   let filteredRecords = [];
   let currentRecordId = null;
+  let selectMode = false;
   const selectedIds = new Set();
 
   const SOURCE_LABEL = { miniprogram: '小程序', web: '网站' };
@@ -1210,10 +1217,33 @@
     }
   }
 
-  function initRecords() {
+  function setSelectMode(on) {
+    selectMode = on;
+    const table = document.querySelector('.data-table');
+    if (table) table.classList.toggle('selecting', on);
+    $('deleteSelected').style.display = on ? '' : 'none';
+    if (!on) selectedIds.clear();
+  }
+
+  function applyRecordFilter() {
+    // 点「筛选」后才进入勾选模式
+    setSelectMode(true);
+    applyRecordFilters();
+  }
+
+  function resetRecordFilter() {
     ['recordSearch', 'recordRisk', 'recordSource', 'recordFrom', 'recordTo'].forEach((id) => {
-      $(id).addEventListener('input', applyRecordFilters);
-      $(id).addEventListener('change', applyRecordFilters);
+      $(id).value = '';
+    });
+    setSelectMode(false);
+    applyRecordFilters();
+  }
+
+  function initRecords() {
+    $('applyRecordFilter').addEventListener('click', applyRecordFilter);
+    $('resetRecordFilter').addEventListener('click', resetRecordFilter);
+    $('recordSearch').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') applyRecordFilter();
     });
     $('refreshRecords').addEventListener('click', loadRecords);
     $('exportRecords').addEventListener('click', exportRecords);
