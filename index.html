@@ -222,8 +222,8 @@
   }
   .modal-mask.show { display: flex; }
   .modal-box {
-    background: #fff; border-radius: 16px; width: 100%; max-width: 620px;
-    max-height: 86vh; display: flex; flex-direction: column;
+    background: #fff; border-radius: 16px; width: 100%; max-width: 720px;
+    max-height: 88vh; display: flex; flex-direction: column;
     box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25);
   }
   .modal-head {
@@ -244,14 +244,67 @@
   .detail-item { font-size: 13px; }
   .detail-item .k { color: var(--muted); margin-right: 6px; }
   .detail-item .v { color: var(--text); font-weight: 500; }
+
+  /* 详情弹窗 */
+  .rec-hero {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 18px 20px; border-radius: 14px; margin-bottom: 18px;
+    background: linear-gradient(135deg, #EAF3FF, #F6FAFF);
+  }
+  .rec-hero.high { background: linear-gradient(135deg, #FEF2F2, #FFF8F8); }
+  .rec-hero.medium { background: linear-gradient(135deg, #FFF7ED, #FFFCF6); }
+  .rec-hero.low { background: linear-gradient(135deg, #F0FDF4, #F8FEF9); }
+  .rec-name { font-size: 20px; font-weight: 700; color: #111827; }
+  .rec-sub { font-size: 13px; color: #6b7280; margin-top: 6px; }
+  .rec-right { text-align: right; }
+  .rec-prob { font-size: 32px; font-weight: 800; line-height: 1; color: var(--primary); }
+  .rec-hero.high .rec-prob { color: #b91c1c; }
+  .rec-hero.medium .rec-prob { color: #c2410c; }
+  .rec-hero.low .rec-prob { color: #15803d; }
+  .rec-prob-label { font-size: 12px; color: #6b7280; margin-top: 6px; }
+
+  .sec { margin-bottom: 18px; }
+  .sec-title {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700; color: #374151;
+    margin-bottom: 10px; letter-spacing: .3px;
+  }
+  .sec-title::before {
+    content: ''; width: 4px; height: 14px; border-radius: 2px; background: var(--primary);
+  }
+  .kv-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 12px; }
+  .kv {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 9px 12px; border-radius: 9px; background: #f8fafc; font-size: 13px;
+  }
+  .kv .k { color: #6b7280; flex-shrink: 0; }
+  .kv .v { color: #1f2937; font-weight: 600; text-align: right; word-break: break-all; }
+
+  .metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .metric-box { background: #f8fafc; border-radius: 10px; padding: 11px 12px; }
+  .metric-box .m { font-size: 17px; font-weight: 700; color: #111827; }
+  .metric-box .m small { font-size: 11px; font-weight: 500; color: #9ca3af; margin-left: 2px; }
+  .metric-box .lab { font-size: 11px; color: #9ca3af; margin-top: 3px; }
+
+  .factor-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .factor-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 12px; border-radius: 9px; background: #f8fafc; font-size: 13px;
+  }
+  .factor-row.hit { background: #FEF2F2; }
+  .factor-row .fname { color: #374151; }
+  .factor-row .yes { color: #b91c1c; font-weight: 700; }
+  .factor-row .no { color: #9ca3af; }
+
+  .factor-chip {
+    display: inline-block; padding: 4px 12px; margin: 0 6px 6px 0;
+    border-radius: 12px; background: #eff6ff; color: var(--primary);
+    font-size: 12px; font-weight: 500;
+  }
   .detail-section { margin-top: 16px; }
   .detail-section h4 {
     font-size: 13px; color: var(--muted); font-weight: 600;
     margin: 0 0 8px; letter-spacing: .5px;
-  }
-  .factor-chip {
-    display: inline-block; padding: 3px 10px; margin: 0 6px 6px 0;
-    border-radius: 10px; background: #eff6ff; color: var(--primary); font-size: 12px;
   }
   @media (max-width: 720px) {
     .detail-grid { grid-template-columns: 1fr; }
@@ -852,11 +905,6 @@
     return 'default';
   }
 
-  function numText(value, unit) {
-    if (value === null || value === undefined || value === '') return '--';
-    return `${value}${unit || ''}`;
-  }
-
   async function loadRecords() {
     $('recordRows').innerHTML = '<tr><td colspan="8" style="text-align:center;color:#9ca3af;padding:30px">加载中...</td></tr>';
     $('recordEmpty').style.display = 'none';
@@ -924,8 +972,16 @@
     });
   }
 
-  function detailItem(k, v) {
-    return `<div class="detail-item"><span class="k">${escapeHtml(k)}</span><span class="v">${escapeHtml(String(v))}</span></div>`;
+  function kvRow(key, value) {
+    return `<div class="kv"><span class="k">${escapeHtml(key)}</span><span class="v">${escapeHtml(String(value))}</span></div>`;
+  }
+
+  function metricBox(label, value, unit) {
+    const text = (value === null || value === undefined || value === '') ? '--' : value;
+    return `<div class="metric-box">
+      <div class="m">${escapeHtml(String(text))}${unit && text !== '--' ? `<small>${unit}</small>` : ''}</div>
+      <div class="lab">${escapeHtml(label)}</div>
+    </div>`;
   }
 
   function openRecordDetail(id) {
@@ -933,74 +989,95 @@
     if (!r) return;
     currentRecordId = r.id;
 
-    $('recordModalTitle').textContent = `${r.patientName || '未命名'} · ${r.riskLevel || '未分级'}`;
+    $('recordModalTitle').textContent = '评估详情';
 
+    const cls = riskClass(r.riskLevel);
     const factors = Array.isArray(r.riskFactors) ? r.riskFactors : [];
-    const history = [
+    const heartText = r.heartDiseaseType === '1' ? '房颤或心梗'
+      : (r.heartDiseaseType === '2' ? '其他心脏病' : '无');
+    const familyText = { '1': '一级亲属', '2': '二级亲属', '0': '无' }[r.strokeFamilyHistory] || '未填';
+
+    const factorRows = [
       ['高血压', YES_NO(r.hypertension)],
       ['糖尿病', YES_NO(r.diabetes)],
-      ['心脏病', r.heartDiseaseType === '1' ? '房颤或心梗' : (r.heartDiseaseType === '2' ? '其他心脏病' : '无')],
+      ['心脏病', heartText],
       ['血脂异常', YES_NO(r.hyperlipidemia)],
       ['以前发生过中风', YES_NO(r.strokeHistory)],
       ['以前发生过短暂性脑缺血', YES_NO(r.tiaHistory)],
-      ['脑卒中家族史', { '1': '一级亲属', '2': '二级亲属', '0': '无' }[r.strokeFamilyHistory] || '—'],
-      ['超重或肥胖', YES_NO(r.overweight)],
+      ['脑卒中家族史', familyText],
+      ['超重或肥胖（BMI≥24）', YES_NO(r.overweight)],
       ['吸烟', YES_NO(r.smoking)],
       ['运动缺乏', YES_NO(r.lackExercise)],
       ['饮酒', YES_NO(r.drinking)],
       ['其他家族遗传性疾病', YES_NO(r.otherFamilyHistory)]
     ];
+    const isHit = (v) => v === '是' || ['房颤或心梗', '其他心脏病', '一级亲属', '二级亲属'].indexOf(v) !== -1;
 
     $('recordModalBody').innerHTML = `
-      <div class="detail-section" style="margin-top:0">
-        <h4>基本信息</h4>
-        <div class="detail-grid">
-          ${detailItem('年龄', numText(r.age, ' 岁'))}
-          ${detailItem('性别', r.gender || '--')}
-          ${detailItem('婚姻状况', r.everMarried || '--')}
-          ${detailItem('职业类型', r.workType || '--')}
-          ${detailItem('居住地', r.residenceType || '--')}
-          ${detailItem('文化程度', r.education || '--')}
-          ${detailItem('家庭月收入', r.monthlyIncome || '--')}
-          ${detailItem('医疗费用承担方式', r.medicalInsurance || '--')}
+      <div class="rec-hero ${cls}">
+        <div>
+          <div class="rec-name">${escapeHtml(r.patientName || '未命名')}</div>
+          <div class="rec-sub">
+            <span class="risk-tag ${cls}">${escapeHtml(r.riskLevel || '未分级')}</span>
+            <span style="margin-left:8px">${escapeHtml(String(r.age || '--'))} 岁 · ${escapeHtml(r.gender || '--')}</span>
+          </div>
+          <div class="rec-sub">${escapeHtml(r.dateText || '')}　来源：${SOURCE_LABEL[r.source] || '—'}</div>
+        </div>
+        <div class="rec-right">
+          <div class="rec-prob">${r.probability == null ? '--' : escapeHtml(String(r.probability))}<span style="font-size:15px">${r.probability == null ? '' : '%'}</span></div>
+          <div class="rec-prob-label">患病概率</div>
         </div>
       </div>
 
-      <div class="detail-section">
-        <h4>临床指标</h4>
-        <div class="detail-grid">
-          ${detailItem('收缩压', numText(r.systolicBP, ' mmHg'))}
-          ${detailItem('舒张压', numText(r.diastolicBP, ' mmHg'))}
-          ${detailItem('空腹血糖', numText(r.avgGlucoseLevel, ' mmol/L'))}
-          ${detailItem('身高', numText(r.height, ' cm'))}
-          ${detailItem('体重', numText(r.weight, ' kg'))}
-          ${detailItem('BMI', numText(r.bmi))}
+      <div class="sec">
+        <div class="sec-title">基本信息</div>
+        <div class="kv-grid">
+          ${kvRow('婚姻状况', r.everMarried || '--')}
+          ${kvRow('职业类型', r.workType || '--')}
+          ${kvRow('居住地', r.residenceType || '--')}
+          ${kvRow('文化程度', r.education || '--')}
+          ${kvRow('家庭月收入', r.monthlyIncome || '--')}
+          ${kvRow('医疗费用承担方式', r.medicalInsurance || '--')}
         </div>
       </div>
 
-      <div class="detail-section">
-        <h4>高危因素（8+2）</h4>
-        <div class="detail-grid">
-          ${history.map(([k, v]) => detailItem(k, v)).join('')}
+      <div class="sec">
+        <div class="sec-title">临床指标</div>
+        <div class="metric-grid">
+          ${metricBox('收缩压', r.systolicBP, 'mmHg')}
+          ${metricBox('舒张压', r.diastolicBP, 'mmHg')}
+          ${metricBox('空腹血糖', r.avgGlucoseLevel, 'mmol/L')}
+          ${metricBox('身高', r.height, 'cm')}
+          ${metricBox('体重', r.weight, 'kg')}
+          ${metricBox('BMI', r.bmi)}
         </div>
       </div>
 
-      <div class="detail-section">
-        <h4>主要风险因素</h4>
+      <div class="sec">
+        <div class="sec-title">高危因素（8+2）</div>
+        <div class="factor-grid">
+          ${factorRows.map(([k, v]) => `
+            <div class="factor-row ${isHit(v) ? 'hit' : ''}">
+              <span class="fname">${escapeHtml(k)}</span>
+              <span class="${isHit(v) ? 'yes' : 'no'}">${escapeHtml(v || '--')}</span>
+            </div>`).join('')}
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-title">主要风险因素</div>
         ${factors.length
           ? factors.map((f) => `<span class="factor-chip">${escapeHtml(f)}</span>`).join('')
           : '<span style="color:#9ca3af;font-size:13px">未发现明显风险因素</span>'}
       </div>
 
-      <div class="detail-section">
-        <h4>评估信息</h4>
-        <div class="detail-grid">
-          ${detailItem('风险等级', r.riskLevel || '--')}
-          ${detailItem('患病概率', numText(r.probability, '%'))}
-          ${detailItem('评估时间', r.dateText || '--')}
-          ${detailItem('来源', SOURCE_LABEL[r.source] || '--')}
-          ${detailItem('评估人员', r.assessedBy || r.ownerName || '--')}
-          ${detailItem('备注', r.notes || '--')}
+      <div class="sec" style="margin-bottom:0">
+        <div class="sec-title">评估信息</div>
+        <div class="kv-grid">
+          ${kvRow('评估时间', r.dateText || '--')}
+          ${kvRow('评估人员', r.assessedBy || r.ownerName || '--')}
+          ${kvRow('备注', r.notes || '--')}
+          ${kvRow('风险等级', r.riskLevel || '--')}
         </div>
       </div>`;
 
