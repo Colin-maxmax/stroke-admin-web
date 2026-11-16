@@ -448,6 +448,7 @@
   .msg-author {
     font-size: 11px; color: #9ca3af; margin: 0 0 4px 2px;
   }
+  .msg-row.admin .msg-author { text-align: right; margin: 0 2px 4px 0; }
   .msg-bubble {
     max-width: 100%; padding: 10px 13px; border-radius: 12px;
     font-size: 14px; line-height: 1.55; white-space: pre-wrap; word-break: break-word;
@@ -1754,18 +1755,24 @@
       $('chatTitle').textContent = (data.thread && data.thread.ownerName) || '会话';
       const messages = data.messages || [];
       const myId = String((currentUser && currentUser.id) || '');
+      const myNames = [
+        currentUser && currentUser.displayName,
+        currentUser && currentUser.username
+      ].filter(Boolean).map(String);
+      const ownerName = (data.thread && data.thread.ownerName) || '用户';
+
       $('chatBody').innerHTML = messages.length
         ? messages.map((m) => {
           const isAdmin = m.from === 'admin';
-          // 只有自己发的管理端消息显示在右侧；其他管理员的回复留在左侧并标出名字
-          const mine = isAdmin && String(m.authorId || '') === myId && myId !== '';
-          const alignRight = isAdmin && (mine || !m.authorId);
-          const label = isAdmin && !alignRight
-            ? `<span class="msg-author">${escapeHtml(m.authorName || '管理员')}</span>`
-            : '';
+          const authorName = String(m.authorName || '');
+          // 新消息看 authorId；老消息没有 authorId，退回用名字判断
+          const sameId = myId !== '' && String(m.authorId || '') === myId;
+          const sameName = !m.authorId && myNames.indexOf(authorName) !== -1;
+          const alignRight = isAdmin && (sameId || sameName);
+          const label = isAdmin ? (authorName || '管理员') : ownerName;
           return `<div class="msg-row ${alignRight ? 'admin' : 'user'}">
             <div class="msg-stack">
-              ${label}
+              <span class="msg-author">${escapeHtml(label)}</span>
               <div class="msg-bubble">${escapeHtml(m.content)}<span class="msg-time">${fmtTime(m.createdAt)}</span></div>
             </div>
           </div>`;
