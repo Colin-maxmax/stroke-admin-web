@@ -378,6 +378,8 @@
   const API_BASE = 'https://significant-donkey-d5cfzd9b35604-1419360854.ap-shanghai.app.tcloudbase.com/api';
   const TOKEN_KEY = 'stroke_admin_token';
   const USER_KEY = 'stroke_admin_user';
+  const LOGIN_AT_KEY = 'stroke_admin_login_at';
+  const SESSION_TTL_MS = 6 * 60 * 60 * 1000;
 
   const $ = (id) => document.getElementById(id);
 
@@ -388,6 +390,7 @@
   let activeThreadId = null;
   let chatTimer = null;
   let listTimer = null;
+  let sessionTimer = null;
 
   function toast(msg) {
     const el = $('toast');
@@ -432,8 +435,8 @@
     if (!body.ok) {
       const err = new Error((body.error && body.error.message) || '请求失败');
       err.code = body.error && body.error.code;
-      if (err.code === 'UNAUTHORIZED' || err.code === 'TOKEN_EXPIRED') {
-        logout(true);
+      if (err.code === 'UNAUTHORIZED' || err.code === 'TOKEN_EXPIRED' || err.code === 'SESSION_REPLACED') {
+        logout(true, err.message || '登录已失效，请重新登录');
       }
       throw err;
     }
@@ -445,21 +448,40 @@
     $('loginView').style.display = 'none';
     $('app').classList.add('ready');
     $('userLine').textContent = (currentUser && (currentUser.displayName || currentUser.username)) || '管理员';
+    scheduleSessionEnd();
     initDashboard();
     loadThreads();
     startThreadPolling();
   }
 
-  function logout(silent) {
+  // 6 小时后强制重新登录（服务端令牌同样 6 小时）
+  function scheduleSessionEnd() {
+    clearTimeout(sessionTimer);
+    const loginAt = Number(localStorage.getItem(LOGIN_AT_KEY)) || Date.now();
+    const remain = SESSION_TTL_MS - (Date.now() - loginAt);
+    if (remain <= 0) {
+      logout(true, '登录已超时，请重新输入账号密码');
+      return;
+    }
+    sessionTimer = setTimeout(() => {
+      logout(true, '登录已超时，请重新输入账号密码');
+    }, remain);
+  }
+
+  function logout(silent, message) {
     token = '';
     currentUser = null;
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(LOGIN_AT_KEY);
+    clearTimeout(sessionTimer);
+    sessionTimer = null;
     stopChatTimer();
     stopListTimer();
     $('app').classList.remove('ready');
     $('loginView').style.display = 'flex';
-    if (!silent) toast('已退出登录');
+    $('loginErr').textContent = message || '';
+    if (!silent && !message) toast('已退出登录');
   }
 
   $('loginForm').addEventListener('submit', async (e) => {
@@ -483,6 +505,8 @@
       currentUser = data.user;
       localStorage.setItem(TOKEN_KEY, token);
       localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
+      localStorage.setItem(LOGIN_AT_KEY, String(Date.now()));
+      $('loginErr').textContent = '';
       showApp();
     } catch (err) {
       errEl.textContent = err.message || '登录失败';
