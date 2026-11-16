@@ -1769,7 +1769,7 @@
           const sameId = myId !== '' && String(m.authorId || '') === myId;
           const sameName = !m.authorId && myNames.indexOf(authorName) !== -1;
           const alignRight = isAdmin && (sameId || sameName);
-          const label = isAdmin ? (authorName || '管理员') : ownerName;
+          const label = isAdmin ? `${authorName || '管理员'}（管理员）` : ownerName;
           return `<div class="msg-row ${alignRight ? 'admin' : 'user'}">
             <div class="msg-stack">
               <span class="msg-author">${escapeHtml(label)}</span>
